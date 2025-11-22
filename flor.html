@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Flor + Corações</title>
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        canvas {
+            border-radius: 12px;
+            background: #000;
+        }
+
+        /* Player estilo Spotify (menor agora) */
+        .spotify-player {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            background: rgba(30, 30, 30, 0.85);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            color: white;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .spotify-logo {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+            background: #1DB954;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .player-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #b3b3b3;
+        }
+
+        .album-cover {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-right: 12px;
+            background: linear-gradient(135deg, #1DB954, #191414);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            text-align: center;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .track-details {
+            flex: 1;
+        }
+
+        .track-name {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: white;
+        }
+
+        .artist-name {
+            font-size: 11px;
+            color: #b3b3b3;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #5e5e5e;
+            border-radius: 2px;
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #1DB954;
+            border-radius: 2px;
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #b3b3b3;
+            margin-bottom: 8px;
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: #b3b3b3;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .control-btn:hover {
+            color: white;
+        }
+
+        .play-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: white;
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="c" width="1400" height="800"></canvas>
+
+    <!-- ÁUDIO AQUI -->
+    <!-- TROQUE O SRC PELO CAMINHO DO SEU MP3 -->
+    <audio id="player" src="./WhatsApp Audio 2025-11-20 at 23.34.54.mp4"></audio>
+
+    <!-- Player Spotify -->
+    <div class="spotify-player">
+        <div class="player-header">
+            <div class="spotify-logo">♪</div>
+            <div class="player-title">TOCANDO DO ÁLBUM</div>
+        </div>
+
+        <div class="track-info">
+            <div class="album-cover">FLORES EM VIDA</div>
+            <div class="track-details">
+                <div class="track-name">Flores em Vida</div>
+                <div class="artist-name">Zezé Di Camargo & Luciano</div>
+            </div>
+        </div>
+
+        <div class="progress-container">
+            <div id="progress" class="progress-bar"></div>
+        </div>
+
+        <div class="time-info">
+            <span id="currentTime">0:00</span>
+            <span id="totalTime">3:07</span>
+        </div>
+
+        <div class="player-controls">
+            <button class="control-btn" id="reloadBtn">⟲</button>
+            <button class="control-btn">⏮</button>
+            <button id="playBtn" class="control-btn play-btn">▶</button>
+            <button class="control-btn">⏭</button>
+            <button class="control-btn" id="reloadBtn">⟳</button>
+        </div>
+    </div>
+
+
+    <script>
+        /*===================== ÁUDIO =====================*/
+        const audio = document.getElementById("player");
+        const playBtn = document.getElementById("playBtn");
+        const progress = document.getElementById("progress");
+        const currentTimeSpan = document.getElementById("currentTime");
+        const totalTimeSpan = document.getElementById("totalTime");
+
+        let isPlaying = false;
+
+        // Play/Pause
+        playBtn.addEventListener("click", () => {
+            if (!isPlaying) {
+                audio.play();
+                playBtn.textContent = "⏸";
+                isPlaying = true;
+            } else {
+                audio.pause();
+                playBtn.textContent = "▶";
+                isPlaying = false;
+            }
+        });
+
+        // Barra de progresso + tempo
+        audio.addEventListener("timeupdate", () => {
+            const percent = (audio.currentTime / audio.duration) * 100;
+            progress.style.width = percent + "%";
+
+            currentTimeSpan.textContent = formatTime(audio.currentTime);
+            totalTimeSpan.textContent = formatTime(audio.duration);
+        });
+
+        function formatTime(t) {
+            if (isNaN(t)) return "0:00";
+            let m = Math.floor(t / 60);
+            let s = Math.floor(t % 60);
+            return `${m}:${s < 10 ? "0" + s : s}`;
+        }
+
+
+
+        /*=================  CANVAS / ANIMAÇÃO DA FLOR =================*/
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const DPR = window.devicePixelRatio || 1;
+        const W = canvas.width;
+        const H = canvas.height;
+
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        canvas.width = Math.floor(W * DPR);
+        canvas.height = Math.floor(H * DPR);
+        ctx.scale(DPR, DPR);
+
+        const center = { x: W / 2, y: H / 2 - 20 };
+        let petalRotation = 0;
+
+
+        /*================ FLOR =================*/
+        function drawStem() {
+            ctx.save();
+            ctx.fillStyle = '#0a7f2a';
+            let x = center.x - 12;
+            let y = center.y + 40;
+            ctx.fillRect(x, y, 24, 400);
+            ctx.restore();
+        }
+
+        function drawPetals() {
+            const petalGroups = 16;
+            const rings = 18;
+            const baseRadius = 150;
+
+            for (let i = 0; i < petalGroups; i++) {
+                ctx.save();
+
+                const angleGroup = (i * (Math.PI * 2 / petalGroups)) + petalRotation;
+
+                ctx.translate(center.x, center.y);
+                ctx.rotate(angleGroup);
+
+                for (let j = 0; j < rings; j++) {
+                    const r = baseRadius - j * 6;
+                    const hue = 0.12 + (j * 0.007);
+                    const saturation = 0.95;
+                    const value = 1;
+
+                    let red, green, blue;
+                    let h = hue * 6;
+                    let I = Math.floor(h);
+                    let f = h - I;
+                    let p = value * (1 - saturation);
+                    let q = value * (1 - f * saturation);
+                    let t = value * (1 - (1 - f) * saturation);
+
+                    switch (I % 6) {
+                        case 0: red = value; green = t; blue = p; break;
+                        case 1: red = q; green = value; blue = p; break;
+                        case 2: red = p; green = value; blue = t; break;
+                        case 3: red = p; green = q; blue = value; break;
+                        case 4: red = t; green = p; blue = value; break;
+                        case 5: red = value; green = p; blue = q; break;
+                    }
+
+                    ctx.fillStyle = `rgb(${Math.round(red * 255)}, ${Math.round(green * 255)}, ${Math.round(blue * 255)})`;
+                    ctx.beginPath();
+
+                    ctx.save();
+                    ctx.rotate(0.2);
+                    ctx.moveTo(0, 0);
+                    ctx.ellipse(0, -r * 0.2, r * 0.35, r * 0.9, Math.PI / 6, Math.PI * 0.2, Math.PI * 0.8, false);
+                    ctx.ellipse(0, -r * 0.2, r * 0.35, r * 0.9, -Math.PI / 6, Math.PI * 0.2, Math.PI * 0.8, true);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+
+                    ctx.rotate(0.04);
+                }
+                ctx.restore();
+            }
+        }
+
+        function drawCenterSeeds() {
+            const phi = 137.508 * Math.PI / 180.0;
+            ctx.save();
+            ctx.translate(center.x, center.y);
+            for (let i = 0; i < 420; i++) {
+                const r = 4 * Math.sqrt(i);
+                const theta = i * phi;
+                const x = r * Math.cos(theta);
+                const y = r * Math.sin(theta);
+                const size = Math.max(1.0, 3 - (i / 200));
+                ctx.beginPath();
+                ctx.fillStyle = `rgb(${120 - (i % 50)}, ${70}, ${20})`;
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawRedCenter() {
+            ctx.save();
+            ctx.translate(center.x, center.y);
+            ctx.beginPath();
+            ctx.fillStyle = '#ff0000';
+            ctx.arc(0, 0, 44, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+
+        /*================ CORAÇÕES =================*/
+        let tHeart = 0;
+
+        const hearts = [
+            { x: 100, y: 200, scale: 4, color: "red", rotation: -0.4 },
+            { x: 1200, y: 200, scale: 4, color: "yellow", rotation: 0.25 },
+            { x: 100, y: 600, scale: 4, color: "yellow", rotation: 0.6 },
+            { x: 1200, y: 600, scale: 4, color: "red", rotation: -0.2 }
+        ];
+
+        function heartPoint(p) {
+            let x = 16 * Math.pow(Math.sin(p), 3);
+            let y = -(13 * Math.cos(p) - 5 * Math.cos(2 * p) - 2 * Math.cos(3 * p) - Math.cos(4 * p));
+            return { x, y };
+        }
+
+        function drawHearts() {
+            hearts.forEach(h => {
+                ctx.save();
+                ctx.translate(h.x, h.y);
+                ctx.rotate(h.rotation);
+
+                ctx.strokeStyle = h.color;
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                let started = false;
+
+                for (let angle = 0; angle < tHeart; angle += 0.01) {
+                    let p = heartPoint(angle);
+                    let px = p.x * h.scale;
+                    let py = p.y * h.scale;
+
+                    if (!started) {
+                        ctx.moveTo(px, py);
+                        started = true;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Loop infinito
+            tHeart += 0.03;
+            if (tHeart >= Math.PI * 2) {
+                tHeart = 0;
+            }
+        }
+
+
+        /*================ RENDER =================*/
+        function render() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, W, H);
+
+            petalRotation += 0.0019;
+
+            drawStem();
+            drawPetals();
+            drawCenterSeeds();
+            drawRedCenter();
+            drawHearts();
+
+            requestAnimationFrame(render);
+        }
+
+        render();
+
+        document.getElementById("reloadBtn").addEventListener("click", () => {
+            t = 0;
+        });
+    </script>
+</body>
+
+</html>
